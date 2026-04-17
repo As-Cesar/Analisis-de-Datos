@@ -404,7 +404,13 @@ mi_t_test_2muestras <- function(x1, x2,
                     "menor" = pt(t, df = gl, lower.tail = TRUE),
                     "bilateral" = 2 * pt(-abs(t), df = gl),
                     stop("Alternativa no válida. Use 'mayor', 'menor' o 'bilateral'."))
-
+  alphas <- c(0.030, 0.070, 0.025, 0.045, 0.001)
+  
+  # Decisiones para cada alpha
+  decisiones <- data.frame(
+    alpha = alphas,
+    decision = ifelse(p_value < alphas, "Rechazar H0", "No Rechazar H0")
+  )
   # Gráfico
   if (graficar) {
     curve(dt(x, df = gl), from = -4, to = 4, lwd = 2, col = "gray30",
@@ -426,7 +432,7 @@ mi_t_test_2muestras <- function(x1, x2,
     grados_libertad = gl,
     p_value = p_value,
     intervalo_confianza = IC,
-    decision = ifelse(p_value < alpha, "Rechazar H0", "No Rechazar H0"),
+    decisiones = decisiones,
     tipo_prueba = tipo
   )
 }
@@ -859,7 +865,9 @@ mi_mcnemar_categoria <- function(x, y, categoria, exacto = FALSE) {
 
 mi_chi2_test <- function(x, p = NULL, tipo = c("bondad", "independencia"), graficar = TRUE) {
   tipo <- match.arg(tipo)
-
+  
+  alphas <- c(0.030, 0.070, 0.025, 0.045, 0.001)
+  
   if (tipo == "bondad") {
     # ----- BONDAD DE AJUSTE -----
     if (!is.factor(x)) x <- as.factor(x)
@@ -890,7 +898,12 @@ mi_chi2_test <- function(x, p = NULL, tipo = c("bondad", "independencia"), grafi
               main = "Bondad de ajuste: FO vs FE",
               ylab = "Frecuencia", xlab = "Categorías")
     }
-
+    
+    
+    decisiones <- data.frame(
+      alpha = alphas,
+      decision = ifelse(p_value < alphas, "Rechazar H0", "No Rechazar H0")
+    )  
     resultado <- list(
       tipo = "Bondad de ajuste",
       frecuencias_observadas = fo,
@@ -898,7 +911,7 @@ mi_chi2_test <- function(x, p = NULL, tipo = c("bondad", "independencia"), grafi
       estadistico_chi2 = chi2,
       grados_libertad = gl,
       p_value = p_value,
-      decision = ifelse(p_value < 0.05, "Rechazar H0", "No Rechazar H0"),
+      decisiones = decisiones,
       interpretacion = "H0: Las proporciones observadas no difieren significativamente de las esperadas."
     )
 
@@ -921,7 +934,12 @@ mi_chi2_test <- function(x, p = NULL, tipo = c("bondad", "independencia"), grafi
       mosaicplot(tabla, color = TRUE, main = "Mosaic plot: Independencia entre variables",
                  xlab = names(x)[1], ylab = names(x)[2])
     }
-
+    
+    
+    decisiones <- data.frame(
+      alpha = alphas,
+      decision = ifelse(p_value < alphas, "Rechazar H0", "No Rechazar H0")
+    )
     resultado <- list(
       tipo = "Independencia entre variables",
       tabla_contingencia = tabla,
@@ -929,7 +947,7 @@ mi_chi2_test <- function(x, p = NULL, tipo = c("bondad", "independencia"), grafi
       estadistico_chi2 = chi2,
       grados_libertad = gl,
       p_value = p_value,
-      decision = ifelse(p_value < 0.05, "Rechazar H0", "No Rechazar H0"),
+      decisiones = decisiones,
       interpretacion = "H0: No hay relación significativa entre las variables."
     )
   }

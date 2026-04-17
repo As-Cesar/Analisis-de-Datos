@@ -130,8 +130,82 @@ resultado <- mi_prop_test_2vectores_binarios(
 resultado$decisiones
 resultado
 
-p_mayo  <- x_mayo / n_mayo
-p_julio <- x_julio / n_julio
+## Prueba Hipotesis para muestras dependientes
+#------------
+#Planteamiento
+#Se desea analizar si la tasa de desempleo cambió entre mayo y julio, 
+#considerando cada departamento como una unidad de análisis.
+#H₀: La media de la tasa de desempleo es igual en mayo y julio para los mismos departamentos.
 
-p_mayo
-p_julio
+# Preparar datos
+# No ocupados por departamento
+no_ocup_dep_mayo <- no_ocup_mayo %>%
+  group_by(DPTO) %>%
+  summarise(no_ocupados = n())
+
+# Fuerza de trabajo por departamento
+fuerza_dep_mayo <- fuerzat_mayo %>%
+  group_by(DPTO) %>%
+  summarise(fuerza = n())
+
+# Tasa de desempleo
+tasa_mayo <- left_join(no_ocup_dep_mayo, fuerza_dep_mayo, by = "DPTO") %>%
+  mutate(tasa_mayo = no_ocupados / fuerza)
+# No ocupados
+no_ocup_dep_julio <- no_ocup_julio %>%
+  group_by(DPTO) %>%
+  summarise(no_ocupados = n())
+
+# Fuerza de trabajo
+fuerza_dep_julio <- fuerzat_julio %>%
+  group_by(DPTO) %>%
+  summarise(fuerza = n())
+
+# Tasa
+tasa_julio <- left_join(no_ocup_dep_julio, fuerza_dep_julio, by = "DPTO") %>%
+  mutate(tasa_julio = no_ocupados / fuerza)
+
+datos_dep <- inner_join(tasa_mayo, tasa_julio, by = "DPTO")
+
+x_mayo <- datos_dep$tasa_mayo
+x_julio <- datos_dep$tasa_julio
+
+length(x_mayo)
+length(x_julio)
+#Aplicar prueba
+resultado <- mi_t_test_2muestras(
+  x_mayo,
+  x_julio,
+  tipo = "dependientes",
+  alternativa = "bilateral"
+)
+resultado
+## Prueba de bondad de ajuste
+#------------
+# Planteamiento
+# Se desea analizar si la distribución de los niveles educativos
+# de las personas encuestadas sigue una distribución uniforme.
+# H0: Los niveles de educación se distribuyen uniformemente
+# (todas las categorías tienen la misma proporción)
+
+# H1: Los niveles de educación NO se distribuyen uniformemente
+
+
+# 1) Preparar datos
+
+nivel_mayo <- caract_gral_mayo %>%
+  mutate(nivel_educacion = case_when(
+    P3042 == 1 ~ "Sin educación",
+    P3042 %in% c(2,3) ~ "Primaria",
+    P3042 %in% c(4,5,6,7) ~ "Secundaria",
+    P3042 == 8 ~ "Técnico",
+    P3042 == 9 ~ "Tecnólogo",
+    P3042 %in% c(10,11,12,13) ~ "Profesional",
+    TRUE ~ NA_character_
+  )) %>%
+  pull(nivel_educacion) %>%
+  na.omit()
+resultado_chi <- mi_chi2_test(
+  x = nivel_mayo,
+  tipo = "bondad"
+)
