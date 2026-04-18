@@ -196,20 +196,20 @@ mi_z_test_2muestras <- function(x1, x2, sigma1, sigma2, D0 = 0,
   # Estadístico z
   error_estandar <- sqrt((sigma1^2 / n1) + (sigma2^2 / n2))
   z <- ((media1 - media2) - D0) / error_estandar
-
+  
   # Valor-p
   p_value <- switch(alternativa,
                     "mayor" = pnorm(z, lower.tail = FALSE),
                     "menor" = pnorm(z, lower.tail = TRUE),
                     "bilateral" = 2 * pnorm(-abs(z)),
                     stop("Alternativa no válida. Use 'mayor', 'menor' o 'bilateral'."))
-
+  
   # Intervalo de confianza
   alpha <- 1 - conf.level
   z_crit <- qnorm(1 - alpha / 2)
   IC <- c((media1 - media2) - z_crit * error_estandar,
           (media1 - media2) + z_crit * error_estandar)
-
+  
   # Gráfico
   if (graficar) {
     curve(dnorm(x), from = -4, to = 4, lwd = 2, col = "gray30",
@@ -217,7 +217,7 @@ mi_z_test_2muestras <- function(x1, x2, sigma1, sigma2, D0 = 0,
     abline(v = z, col = "blue", lty = 2, lwd = 2)
     legend("topright", legend = paste("Z =", round(z, 3)),
            col = "blue", lty = 2, bty = "n")
-
+    
     if (alternativa == "bilateral") {
       abline(v = c(-z_crit, z_crit), col = "red", lty = 3)
     } else if (alternativa == "mayor") {
@@ -226,11 +226,12 @@ mi_z_test_2muestras <- function(x1, x2, sigma1, sigma2, D0 = 0,
       abline(v = qnorm(alpha), col = "red", lty = 3)
     }
   }
-
+  
   # Resultado
   list(
     media1 = media1,
     media2 = media2,
+    error_estandar = error_estandar,
     diferencia_observada = media1 - media2,
     estadistico_z = z,
     p_value = p_value,
@@ -267,7 +268,7 @@ mi_t_test_2muestras <- function(x1, x2,
   # tipo: tipo de prueba t -> "varianzas_iguales", "varianzas_desiguales", "dependientes"
   # conf.level: nivel de confianza
   # graficar: dibujar la curva t con el estadístico y valores críticos
-
+  
   if (tipo == "dependientes") {
     if (length(x1) != length(x2)) stop("Las muestras pareadas deben tener igual longitud.")
     d <- x1 - x2
@@ -277,12 +278,12 @@ mi_t_test_2muestras <- function(x1, x2,
     error <- sd_d / sqrt(n)
     gl <- n - 1
     t <- media_d / error
-
+    
     # IC
     alpha <- 1 - conf.level
     t_crit <- qt(1 - alpha/2, df = gl)
     IC <- c(media_d - t_crit * error, media_d + t_crit * error)
-
+    
   } else {
     n1 <- length(x1)
     n2 <- length(x2)
@@ -290,35 +291,36 @@ mi_t_test_2muestras <- function(x1, x2,
     media2 <- mean(x2)
     var1 <- var(x1)
     var2 <- var(x2)
-
+    
     if (tipo == "varianzas_iguales") {
       # Pooled variance
       sp2 <- ((n1 - 1)*var1 + (n2 - 1)*var2) / (n1 + n2 - 2)
       error <- sqrt(sp2 * (1/n1 + 1/n2))
       gl <- n1 + n2 - 2
-
+      
     } else if (tipo == "varianzas_desiguales") {
       # Welch’s t-test
+      sp2 <- NA
       error <- sqrt(var1/n1 + var2/n2)
       gl <- ( (var1/n1 + var2/n2)^2 ) /
-            ( (var1^2 / (n1^2 * (n1 - 1))) + (var2^2 / (n2^2 * (n2 - 1))) )
+        ( (var1^2 / (n1^2 * (n1 - 1))) + (var2^2 / (n2^2 * (n2 - 1))) )
     } else {
       stop("Tipo de prueba no válido.")
     }
-
+    
     t <- (media1 - media2) / error
     alpha <- 1 - conf.level
     t_crit <- qt(1 - alpha/2, df = gl)
     IC <- c((media1 - media2) - t_crit * error, (media1 - media2) + t_crit * error)
   }
-
+  
   # Valor-p según alternativa
   p_value <- switch(alternativa,
                     "mayor" = pt(t, df = gl, lower.tail = FALSE),
                     "menor" = pt(t, df = gl, lower.tail = TRUE),
                     "bilateral" = 2 * pt(-abs(t), df = gl),
                     stop("Alternativa no válida. Use 'mayor', 'menor' o 'bilateral'."))
-
+  
   # Gráfico
   if (graficar) {
     curve(dt(x, df = gl), from = -4, to = 4, lwd = 2, col = "gray30",
@@ -333,9 +335,17 @@ mi_t_test_2muestras <- function(x1, x2,
       abline(v = qt(alpha, df = gl), col = "red", lty = 3)
     }
   }
-
+  
   # Salida
   list(
+    media1 = media1,
+    media2 = media2,
+    n1 = n1,        
+    n2 = n2,
+    sp2 = sp2,
+    var1 = var1,
+    var2 = var2,
+    error = error,
     estadistico_t = t,
     grados_libertad = gl,
     p_value = p_value,
@@ -386,9 +396,10 @@ for (a in alphas) {
   
   salida_detallada <- paste0(
     "\n>>> ANÁLISIS PARA α = ", a, " (Confianza del ", confianza_pct, "%) <<<\n",
-    "Media grupo Superior:        ", round(prueba1$media1, 4), "\n",
-    "Media grupo Básica:          ", round(prueba1$media2, 4), "\n",
+    "Media ingresos grupo Superior:        ", round(prueba1$media1, 4), "\n",
+    "Media ingresos grupo Básica:          ", round(prueba1$media2, 4), "\n",
     "Diferencia observada:        ", round(prueba1$diferencia_observada, 4), "\n",
+    "Error estandar:        ", round(prueba1$error_estandar, 4), "\n",
     "Estadístico Z:                ", round(prueba1$estadistico_z, 4), "\n",
     "Valor crítico Z:              ", round(qnorm(1 - a), 4), "\n",
     "Valor p:                      ", format(prueba1$p_value, scientific=T), "\n",
@@ -446,21 +457,26 @@ for (a in alphas) {
     conf = paste0((1-a)*100, "%"),
     dec = prueba2$decision
   ))
-    
-    conf_pct <- (1 - a) * 100
-    cat(paste0(
-      "\n[ ALPHA: ", a, " | Confianza: ", conf_pct, "% ]\n",
-      "Estadístico t: ", round(prueba2$estadistico_t, 4), 
-      " | Valor Crítico: ", round(qt(1 - a, df = prueba2$grados_libertad), 4), "\n",
-      "Grados de Libertad: ", round(prueba2$grados_libertad, 2), 
-      " | Valor p: ", format(prueba2$p_value, scientific=T, digits=4), "\n",
-      "IC ", conf_pct, "%: [", round(prueba2$intervalo_confianza[1], 4), ", ", 
-      round(prueba2$intervalo_confianza[2], 4), "]\n",
-      "Regla de decisión: Rechazar H0 si t > ", round(qt(1 - a, df = prueba2$grados_libertad), 4), "\n",
-      "Decisión: ", prueba2$decision, "\n",
-      "Conclusión: Con un α=", a, ", se ", 
-      ifelse(prueba2$decision == "Rechazar H0", "encuentra", "no encuentra"), 
-      " evidencia suficiente para afirmar que la tasa de desempleo en educación básica es mayor a la de superior.\n"
+  
+  conf_pct <- (1 - a) * 100
+  cat(paste0(
+    "\nAnalisis para ALPHA: ", a, " | Confianza: ", conf_pct, "% ]\n",
+    "Media tasa desempleo grupo Basica:        ", round(prueba2$media1, 4), "\n",
+    "Media tasa de desempleo grupo Superior:          ", round(prueba2$media2, 4), "\n",
+    "Cantidad grupo Basica:        ", round(prueba2$n1, 4), "\n",
+    "Cantidad grupo Superior:          ", round(prueba2$n2, 4), "\n",
+    "Varianza conjunta        ", round(prueba2$sp2, 6), "\n",
+    "Estadístico t: ", round(prueba2$estadistico_t, 4), 
+    " | Valor Crítico: ", round(qt(1 - a, df = prueba2$grados_libertad), 4), "\n",
+    "Grados de Libertad: ", round(prueba2$grados_libertad, 2), 
+    " | Valor p: ", format(prueba2$p_value, scientific=T, digits=4), "\n",
+    "IC ", conf_pct, "%: [", round(prueba2$intervalo_confianza[1], 4), ", ", 
+    round(prueba2$intervalo_confianza[2], 4), "]\n",
+    "Regla de decisión: Rechazar H0 si t > ", round(qt(1 - a, df = prueba2$grados_libertad), 4), "\n",
+    "Decisión: ", prueba2$decision, "\n",
+    "Conclusión: Con un α=", a, ", se ", 
+    ifelse(prueba2$decision == "Rechazar H0", "encuentra", "no encuentra"), 
+    " evidencia suficiente para afirmar que la tasa de desempleo en educación básica es mayor a la de superior.\n"
   ))
 }
 imprimir_tabla_alpha("PRUEBA 2: Tasa Desempleo (t - Var. Iguales)", "Estadístico t", df2_resumen)
@@ -504,24 +520,25 @@ for (a in alphas) {
     dec   = prueba3$decision
   ))
   
-conf_pct <- (1 - a) * 100
-
-cat(paste0(
-  "\n[ ALPHA: ", a, " | Confianza: ", conf_pct, "% (Bilateral) ]\n",
-  "Estadístico t: ", round(prueba3$estadistico_t, 4), 
-  " | Valor Crítico (±): ", round(valor_critico, 4), "\n",
-  "Grados de Libertad (Welch): ", round(prueba3$grados_libertad, 2), 
-  " | Valor p: ", format(prueba3$p_value, scientific=T), "\n",
-  "IC ", conf_pct, "%: [", round(prueba3$intervalo_confianza[1], 4), ", ", 
-  round(prueba3$intervalo_confianza[2], 4), "]\n",
-  "Regla de decisión: Rechazar H0 si |t| > ", round(valor_critico, 4), "\n",
-  "Decisión: ", prueba3$decision, "\n",
-  "Conclusión: Con un α=", a, ", se ", 
-  ifelse(prueba3$decision == "Rechazar H0", "encuentra", "no encuentra"), 
-  " evidencia estadística suficiente para afirmar que existe una 
+  conf_pct <- (1 - a) * 100
+  
+  cat(paste0(
+    "\n[ ALPHA: ", a, " | Confianza: ", conf_pct, "% (Bilateral) ]\n",
+    "Estadístico t: ", round(prueba3$estadistico_t, 4), 
+    " | Valor Crítico (±): ", round(valor_critico, 4), "\n",
+    "Error: ", round(prueba3$grados_libertad, 2),
+    "Grados de Libertad (Welch): ", round(prueba3$grados_libertad, 2), 
+    " | Valor p: ", format(prueba3$p_value, scientific=T), "\n",
+    "IC ", conf_pct, "%: [", round(prueba3$intervalo_confianza[1], 4), ", ", 
+    round(prueba3$intervalo_confianza[2], 4), "]\n",
+    "Regla de decisión: Rechazar H0 si |t| > ", round(valor_critico, 4), "\n",
+    "Decisión: ", prueba3$decision, "\n",
+    "Conclusión: Con un α=", a, ", se ", 
+    ifelse(prueba3$decision == "Rechazar H0", "encuentra", "no encuentra"), 
+    " evidencia estadística suficiente para afirmar que existe una 
          diferencia significativa en la tasa de disponibilidad laboral entre
          hogares con educación básica y hogares con educación superior.\n"
-))
+  ))
   
   
 }
