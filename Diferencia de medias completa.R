@@ -121,6 +121,23 @@ base <- base %>%
 
 base %>% summary()
 
+#Base el cual se trabaja para las medias
+base_medias <- base %>%
+  filter(!is.na(nivel_educacion)) %>%
+  transmute(
+    directorio          = DIRECTORIO,
+    nivel_educacion     = nivel_educacion,
+    grupo_edu           = factor(
+      if_else(nivel_educacion %in% c("Técnico", "Tecnólogo", "Profesional"),
+              "Superior", "Básica")),
+    log_ingreso_prom    = log_ingreso_prom,
+    tasa_desempleo      = tasa_desempleo,
+    tasa_disponibilidad = tasa_disponibilidad
+  )
+
+superior <- base_medias %>% filter(grupo_edu == "Superior")
+basica   <- base_medias %>% filter(grupo_edu == "Básica")
+
 # ══════════════════════════════════════════════════════════════════════════════
 # REPORTE DE PRUEBAS DE HIPÓTESIS - ANÁLISIS MULTINIVEL (ALPHA)
 # ══════════════════════════════════════════════════════════════════════════════
