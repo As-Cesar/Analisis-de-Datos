@@ -173,6 +173,179 @@ imprimir_tabla_alpha <- function(titulo, estadistico_nombre, datos_tabla) {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
+# PRUEBA Z PARA DOS MUESTRAS INDEPENDIENTES
+# ══════════════════════════════════════════════════════════════════════════════
+# Esta función permite comparar dos medias poblacionales
+# con varianzas conocidas, usando una prueba Z.
+# --------------------------------------------
+
+mi_z_test_2muestras <- function(x1, x2, sigma1, sigma2, D0 = 0,
+                                alternativa = "bilateral", conf.level = 0.95, graficar = TRUE) {
+  # x1, x2: vectores con las dos muestras
+  # sigma1, sigma2: desviaciones estándar poblacionales conocidas
+  # D0: diferencia esperada bajo H0 (por defecto = 0)
+  # alternativa: "mayor", "menor", o "bilateral"
+  # conf.level: nivel de confianza para IC
+  # graficar: si TRUE, dibuja la curva Z con el valor crítico y estadístico
+  
+  n1 <- length(x1)
+  n2 <- length(x2)
+  media1 <- mean(x1)
+  media2 <- mean(x2)
+  
+  # Estadístico z
+  error_estandar <- sqrt((sigma1^2 / n1) + (sigma2^2 / n2))
+  z <- ((media1 - media2) - D0) / error_estandar
+
+  # Valor-p
+  p_value <- switch(alternativa,
+                    "mayor" = pnorm(z, lower.tail = FALSE),
+                    "menor" = pnorm(z, lower.tail = TRUE),
+                    "bilateral" = 2 * pnorm(-abs(z)),
+                    stop("Alternativa no válida. Use 'mayor', 'menor' o 'bilateral'."))
+
+  # Intervalo de confianza
+  alpha <- 1 - conf.level
+  z_crit <- qnorm(1 - alpha / 2)
+  IC <- c((media1 - media2) - z_crit * error_estandar,
+          (media1 - media2) + z_crit * error_estandar)
+
+  # Gráfico
+  if (graficar) {
+    curve(dnorm(x), from = -4, to = 4, lwd = 2, col = "gray30",
+          ylab = "Densidad", xlab = "Z", main = "Prueba Z para dos muestras")
+    abline(v = z, col = "blue", lty = 2, lwd = 2)
+    legend("topright", legend = paste("Z =", round(z, 3)),
+           col = "blue", lty = 2, bty = "n")
+
+    if (alternativa == "bilateral") {
+      abline(v = c(-z_crit, z_crit), col = "red", lty = 3)
+    } else if (alternativa == "mayor") {
+      abline(v = qnorm(1 - alpha), col = "red", lty = 3)
+    } else if (alternativa == "menor") {
+      abline(v = qnorm(alpha), col = "red", lty = 3)
+    }
+  }
+
+  # Resultado
+  list(
+    media1 = media1,
+    media2 = media2,
+    diferencia_observada = media1 - media2,
+    estadistico_z = z,
+    p_value = p_value,
+    intervalo_confianza = IC,
+    decision = ifelse(p_value < alpha, "Rechazar H0", "No Rechazar H0")
+  )
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PRUEBA t PARA DOS MUESTRAS - FUNCIÓN PERSONALIZADA EN R
+# ══════════════════════════════════════════════════════════════════════════════
+# En esta función vamos a construir manualmente la prueba t para comparar
+# dos medias poblacionales bajo tres escenarios distintos:
+#
+# 1. Muestras independientes con varianzas desconocidas e IGUALES
+# 2. Muestras independientes con varianzas desconocidas y DESIGUALES
+# 3. Muestras pareadas o dependientes (comparación de diferencias)
+#
+# Esta función permite visualizar claramente cómo se calculan
+# el estadístico t, los grados de libertad, el valor-p y el
+# intervalo de confianza, sin depender de la función t.test().
+#
+# Además, incluye la opción de graficar la distribución t de Student,
+# el valor crítico y el valor observado del estadístico.
+# --------------------------------------------------------------------
+
+mi_t_test_2muestras <- function(x1, x2,
+                                alternativa = "bilateral",
+                                tipo = "varianzas_desiguales", # "varianzas_iguales", "dependientes"
+                                conf.level = 0.95,
+                                graficar = TRUE) {
+  # x1, x2: vectores con las dos muestras
+  # alternativa: "mayor", "menor", "bilateral"
+  # tipo: tipo de prueba t -> "varianzas_iguales", "varianzas_desiguales", "dependientes"
+  # conf.level: nivel de confianza
+  # graficar: dibujar la curva t con el estadístico y valores críticos
+
+  if (tipo == "dependientes") {
+    if (length(x1) != length(x2)) stop("Las muestras pareadas deben tener igual longitud.")
+    d <- x1 - x2
+    n <- length(d)
+    media_d <- mean(d)
+    sd_d <- sd(d)
+    error <- sd_d / sqrt(n)
+    gl <- n - 1
+    t <- media_d / error
+
+    # IC
+    alpha <- 1 - conf.level
+    t_crit <- qt(1 - alpha/2, df = gl)
+    IC <- c(media_d - t_crit * error, media_d + t_crit * error)
+
+  } else {
+    n1 <- length(x1)
+    n2 <- length(x2)
+    media1 <- mean(x1)
+    media2 <- mean(x2)
+    var1 <- var(x1)
+    var2 <- var(x2)
+
+    if (tipo == "varianzas_iguales") {
+      # Pooled variance
+      sp2 <- ((n1 - 1)*var1 + (n2 - 1)*var2) / (n1 + n2 - 2)
+      error <- sqrt(sp2 * (1/n1 + 1/n2))
+      gl <- n1 + n2 - 2
+
+    } else if (tipo == "varianzas_desiguales") {
+      # Welch’s t-test
+      error <- sqrt(var1/n1 + var2/n2)
+      gl <- ( (var1/n1 + var2/n2)^2 ) /
+            ( (var1^2 / (n1^2 * (n1 - 1))) + (var2^2 / (n2^2 * (n2 - 1))) )
+    } else {
+      stop("Tipo de prueba no válido.")
+    }
+
+    t <- (media1 - media2) / error
+    alpha <- 1 - conf.level
+    t_crit <- qt(1 - alpha/2, df = gl)
+    IC <- c((media1 - media2) - t_crit * error, (media1 - media2) + t_crit * error)
+  }
+
+  # Valor-p según alternativa
+  p_value <- switch(alternativa,
+                    "mayor" = pt(t, df = gl, lower.tail = FALSE),
+                    "menor" = pt(t, df = gl, lower.tail = TRUE),
+                    "bilateral" = 2 * pt(-abs(t), df = gl),
+                    stop("Alternativa no válida. Use 'mayor', 'menor' o 'bilateral'."))
+
+  # Gráfico
+  if (graficar) {
+    curve(dt(x, df = gl), from = -4, to = 4, lwd = 2, col = "gray30",
+          ylab = "Densidad", xlab = "t", main = paste("Distribución t (gl =", round(gl, 1), ")"))
+    abline(v = t, col = "blue", lwd = 2, lty = 2)
+    legend("topright", legend = paste("t =", round(t, 3)), col = "blue", lty = 2, bty = "n")
+    if (alternativa == "bilateral") {
+      abline(v = c(-t_crit, t_crit), col = "red", lty = 3)
+    } else if (alternativa == "mayor") {
+      abline(v = qt(1 - alpha, df = gl), col = "red", lty = 3)
+    } else if (alternativa == "menor") {
+      abline(v = qt(alpha, df = gl), col = "red", lty = 3)
+    }
+  }
+
+  # Salida
+  list(
+    estadistico_t = t,
+    grados_libertad = gl,
+    p_value = p_value,
+    intervalo_confianza = IC,
+    decision = ifelse(p_value < alpha, "Rechazar H0", "No Rechazar H0"),
+    tipo_prueba = tipo
+  )
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
 # PRUEBA 1: Diferencia de medias — Varianzas CONOCIDAS (Z test)
 # Variable: log_ingreso_prom
 # ══════════════════════════════════════════════════════════════════════════════
