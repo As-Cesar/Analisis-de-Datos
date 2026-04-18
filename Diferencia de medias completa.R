@@ -290,7 +290,7 @@ for (a in alphas) {
       " evidencia suficiente para afirmar que la tasa de desempleo en educación básica es mayor a la de superior.\n"
   ))
 }
-imprimir_tabla_alpha("PRUEBA 2: Tasa Desempleo (t - Var. Iguales)", "Estadístico t", df2)
+imprimir_tabla_alpha("PRUEBA 2: Tasa Desempleo (t - Var. Iguales)", "Estadístico t", df2_resumen)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
