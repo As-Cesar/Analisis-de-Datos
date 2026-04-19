@@ -373,8 +373,8 @@ mi_t_test_2muestras <- function(x1, x2,
 # ¿El ingreso promedio (en escala logarítmica) de los hogares con educación
 # superior es significativamente mayor que el de hogares con educación básica?
 
-# H0: μ_superior - μ_basica  ≤ 0   (no hay diferencia en el ingreso promedio)
-# H1: μ_superior - μ_basica  > 0   (hogares con educación superior ganan más)
+# H0: μ_superior - μ_basica  ≤ 0
+# H1: μ_superior - μ_basica  > 0   
 
 # Prueba: Z para dos muestras independientes con varianzas conocidas.
 # Justificación: se asumen como conocidas las desviaciones estándar poblacionales
@@ -418,8 +418,8 @@ for (a in alphas) {
     "Conclusión: Con un nivel de significancia del ", a*100, "%, se ", 
     ifelse(prueba1$decision == "Rechazar H0",
            "encuentra evidencia suficiente para afirmar que el ingreso promedio (log) 
-           de los hogares con educación superior es mayor al de educación básica.",
-           "no encuentra evidencia suficiente para afirmar la superioridad del ingreso."), 
+           de los hogares con educación superior es significativamente mayor al de educación básica.",
+           "no encuentra evidencia suficiente para afirmar la significativa superioridad del ingreso."), 
     "\n"
   )
   
@@ -438,8 +438,8 @@ imprimir_tabla_alpha("PRUEBA 1: Log Ingreso Promedio (Z - Var. Conocidas)", "Est
 # ¿La tasa de desempleo promedio de los hogares con educación básica es
 # significativamente mayor que la de los hogares con educación superior?
 
-# H0: μ_basica - μ_superior ≤ 0   (tasas de desempleo iguales entre grupos)
-# H1: μ_basica - μ_superior > 0   (hogares con educación básica tienen más desempleo)
+# H0: μ_basica - μ_superior ≤ 0 
+# H1: μ_basica - μ_superior > 0
 
 # Prueba: t para dos muestras independientes con varianzas iguales y desconocidas.
 # Justificación: se asume homogeneidad de varianzas (varianzas poblacionales
@@ -485,7 +485,7 @@ for (a in alphas) {
     "Decisión: ", prueba2$decision, "\n",
     "Conclusión: Con un α=", a, ", se ", 
     ifelse(prueba2$decision == "Rechazar H0", "encuentra", "no encuentra"), 
-    " evidencia suficiente para afirmar que la tasa de desempleo en educación básica es mayor a la de superior.\n"
+    " evidencia suficiente para afirmar que la tasa de desempleo en educación básica es significativamente mayor a la de superior.\n"
   ))
 }
 imprimir_tabla_alpha("PRUEBA 2: Tasa Desempleo (t - Var. Iguales)", "Estadístico t", df2_resumen)
