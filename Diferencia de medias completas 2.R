@@ -217,7 +217,7 @@ mi_z_test_2muestras <- function(x1, x2, sigma1, sigma2, D0 = 0,
   # Gráfico
   if (graficar) {
     curve(dnorm(x), from = -4, to = 4, lwd = 2, col = "gray30",
-          ylab = "Densidad", xlab = "Z", main = "Prueba Z para dos muestras")
+          ylab = "Densidad", xlab = "Z", main = paste("Prueba Z para dos muestras | α =", alpha) )
     abline(v = z, col = "blue", lty = 2, lwd = 2)
     legend("topright", legend = paste("Z =", round(z, 3)),
            col = "blue", lty = 2, bty = "n")
@@ -333,7 +333,7 @@ mi_t_test_2muestras <- function(x1, x2,
   # Gráfico
   if (graficar) {
     curve(dt(x, df = gl), from = -4, to = 4, lwd = 2, col = "gray30",
-          ylab = "Densidad", xlab = "t", main = paste("Distribución t (gl =", round(gl, 1), ")"))
+          ylab = "Densidad", xlab = "t", main = paste("Distribución t (gl =", round(gl, 1),  ")", "α =", alpha))
     abline(v = t, col = "blue", lwd = 2, lty = 2)
     legend("topright", legend = paste("t =", round(t, 3)), col = "blue", lty = 2, bty = "n")
     if (alternativa == "bilateral") {
