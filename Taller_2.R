@@ -127,7 +127,6 @@ resultado <- mi_prop_test_2vectores_binarios(
   alphas = c(0.030, 0.070, 0.025, 0.045, 0.001)
 )
 
-resultado$decisiones
 resultado
 
 ## Prueba Hipotesis para muestras dependientes
@@ -209,3 +208,102 @@ resultado_chi <- mi_chi2_test(
   x = nivel_mayo,
   tipo = "bondad"
 )
+resultado_chi
+#------------
+# Prueba de independencia (Chi-cuadrado)
+#------------
+
+# Planteamiento:
+# Se desea analizar si existe relación entre el nivel educativo 
+# y la condición de ocupación (ocupado o desocupado) en la población.
+
+# Hipótesis nula (H0):
+# El nivel educativo y la condición de ocupación son independientes,
+# es decir, la distribución de ocupados y desocupados es la misma
+# para todos los niveles educativos.
+
+# Hipótesis alternativa (H1):
+# El nivel educativo y la condición de ocupación NO son independientes,
+# es decir, existe una relación entre ambas variables.
+
+
+# 1) Preparar datos
+
+datos_indep <- bind_rows(
+  ocupados_mayo %>%
+    select(DIRECTORIO, SECUENCIA_P, ORDEN) %>%
+    mutate(condicion_ocupacion = "Ocupado"),
+  
+  no_ocup_mayo %>%
+    filter(DSI == 1) %>%
+    select(DIRECTORIO, SECUENCIA_P, ORDEN) %>%
+    mutate(condicion_ocupacion = "Desocupado")
+) %>%
+  inner_join(
+    caract_gral_mayo %>%
+      select(DIRECTORIO, SECUENCIA_P, ORDEN, nivel_educacion),
+    by = c("DIRECTORIO", "SECUENCIA_P", "ORDEN")
+  ) %>%
+  na.omit()
+# 2) aplicar prueba
+resultado_indep <- mi_chi2_test(
+  x = datos_indep %>% select(nivel_educacion, condicion_ocupacion),
+  tipo = "independencia"
+)
+
+resultado_indep
+
+#------------
+# Prueba de signos
+#------------
+
+# Planteamiento:
+# Se desea analizar si la tasa de desempleo cambió entre mayo y julio,
+# considerando cada departamento como unidad de análisis.
+
+# Hipótesis nula (H0):
+# La mediana de las diferencias entre la tasa de desempleo de mayo y julio es igual a 0,
+# es decir, no hay cambio en la tasa de desempleo.
+
+# Hipótesis alternativa (H1):
+# La mediana de las diferencias entre la tasa de desempleo de mayo y julio es diferente de 0,
+# es decir, sí hay cambio en la tasa de desempleo.
+
+# 1) Preparar datos
+# MAYO
+no_ocup_dep_mayo <- no_ocup_mayo %>%
+  group_by(DPTO) %>%
+  summarise(no_ocupados = sum(DSI == 1, na.rm = TRUE))
+
+fuerza_dep_mayo <- fuerzat_mayo %>%
+  group_by(DPTO) %>%
+  summarise(fuerza = n())
+
+tasa_mayo <- left_join(no_ocup_dep_mayo, fuerza_dep_mayo, by = "DPTO") %>%
+  mutate(tasa_mayo = no_ocupados / fuerza)
+
+# JULIO
+no_ocup_dep_julio <- no_ocup_julio %>%
+  group_by(DPTO) %>%
+  summarise(no_ocupados = sum(DSI == 1, na.rm = TRUE))
+
+fuerza_dep_julio <- fuerzat_julio %>%
+  group_by(DPTO) %>%
+  summarise(fuerza = n())
+
+tasa_julio <- left_join(no_ocup_dep_julio, fuerza_dep_julio, by = "DPTO") %>%
+  mutate(tasa_julio = no_ocupados / fuerza)
+
+datos_signos <- inner_join(tasa_mayo, tasa_julio, by = "DPTO")
+
+d <- datos_signos$tasa_mayo - datos_signos$tasa_julio
+
+# eliminar empates (d = 0)
+d <- d[d != 0]
+
+resultado_signos <- mi_prueba_de_signos(
+  x_mayo,
+  x_julio,
+  usar_rankings = TRUE
+)
+resultado_signos

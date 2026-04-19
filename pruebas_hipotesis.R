@@ -413,21 +413,65 @@ mi_t_test_2muestras <- function(x1, x2,
   )
   # Gráfico
   if (graficar) {
+    # Configurar los valores
+    gl <- 32
+    t_observado <- 0.6694396
+    alphas <- c(0.001, 0.025, 0.030, 0.045, 0.070)
+    alternativa <- "bilateral"  # o "mayor", "menor"
+    
+    # Colores para cada alpha
+    colores <- c("red", "orange", "green", "blue", "purple")
+    
+    # Gráfico base
     curve(dt(x, df = gl), from = -4, to = 4, lwd = 2, col = "gray30",
-          ylab = "Densidad", xlab = "t", main = paste("Distribución t (gl =", round(gl, 1), ")"))
-    abline(v = t, col = "blue", lwd = 2, lty = 2)
-    legend("topright", legend = paste("t =", round(t, 3)), col = "blue", lty = 2, bty = "n")
-    if (alternativa == "bilateral") {
-      abline(v = c(-t_crit, t_crit), col = "red", lty = 3)
-    } else if (alternativa == "mayor") {
-      abline(v = qt(1 - alpha, df = gl), col = "red", lty = 3)
-    } else if (alternativa == "menor") {
-      abline(v = qt(alpha, df = gl), col = "red", lty = 3)
+          ylab = "Densidad", 
+          xlab = "t", 
+          main = paste("Distribución t (gl =", gl, ")"))
+    
+    # Línea del estadístico t observado
+    abline(v = t_observado, col = "black", lwd = 2, lty = 2)
+    
+    # Leyenda para el estadístico t
+    legend("topright", 
+           legend = paste("t =", round(t_observado, 3)), 
+           col = "black", 
+           lty = 2, 
+           lwd = 2,
+           bty = "n")
+    
+    # Dibujar valores críticos para cada alpha
+    for (i in seq_along(alphas)) {
+      alpha_actual <- alphas[i]
+      color_actual <- colores[i]
+      
+      if (alternativa == "bilateral") {
+        t_crit <- qt(1 - alpha_actual/2, df = gl)
+        # Línea izquierda (negativa)
+        abline(v = -t_crit, col = color_actual, lty = 3, lwd = 1.5)
+        # Línea derecha (positiva)
+        abline(v = t_crit, col = color_actual, lty = 3, lwd = 1.5)
+      } else if (alternativa == "mayor") {
+        t_crit <- qt(1 - alpha_actual, df = gl)
+        abline(v = t_crit, col = color_actual, lty = 3, lwd = 1.5)
+      } else if (alternativa == "menor") {
+        t_crit <- qt(alpha_actual, df = gl)
+        abline(v = t_crit, col = color_actual, lty = 3, lwd = 1.5)
+      }
     }
+    
+    # Leyenda para los valores críticos
+    legend("topleft",
+           legend = paste("α =", alphas),
+           col = colores[1:length(alphas)],
+           lty = 3,
+           lwd = 1.5,
+           title = "Valores críticos",
+           bty = "n",
+           cex = 0.8)
   }
 
   # Salida
-  list(
+  resultados <- list(
     estadistico_t = t,
     grados_libertad = gl,
     p_value = p_value,
@@ -435,6 +479,23 @@ mi_t_test_2muestras <- function(x1, x2,
     decisiones = decisiones,
     tipo_prueba = tipo
   )
+  
+  # Agregar información específica para muestras dependientes
+  if (tipo == "dependientes") {
+    resultados$diferencias <- d
+    resultados$media_diferencias <- media_d
+    resultados$sd_diferencias <- sd_d
+    resultados$n_pares <- n
+  } else {
+    # Opcional: para muestras independientes también puedes agregar info útil
+    resultados$n1 <- n1
+    resultados$n2 <- n2
+    resultados$media1 <- media1
+    resultados$media2 <- media2
+  }
+  
+  return(resultados)
+  
 }
 
 # --------------------------------------------------
@@ -617,8 +678,13 @@ mi_prop_test_2vectores_binarios <- function(x1, x2,
     
     list(
       alpha = alpha,
+      n1 = n1,
+      n2 = n2,
+      exitos_1 = x1_sum,
+      exitos_2 = x2_sum,
       proporcion_1 = p1_hat,
       proporcion_2 = p2_hat,
+      proporcion_combinada = p_comb,
       diferencia_observada = p1_hat - p2_hat,
       estadistico_z = z,
       p_value = p_value,
@@ -992,103 +1058,61 @@ mi_prueba_de_signos <- function(x, y,
                                 usar_rankings = FALSE,
                                 descendente = FALSE,
                                 ties = "average",
-                                alpha = 0.05) {
+                                alphas = c(0.030, 0.070, 0.025, 0.045, 0.001)) {
+  
   # Validaciones generales
   if (length(x) != length(y)) stop("Los vectores deben tener la misma longitud.")
   if (!is.numeric(x) || !is.numeric(y)) stop("Ambos vectores deben ser numéricos.")
-
-  # Si usar_rankings es TRUE, convertir a posiciones
+  
+  # Rankings si aplica
   if (usar_rankings) {
     x <- ranking_ordinal(x, descendente = descendente, ties = ties)
     y <- ranking_ordinal(y, descendente = descendente, ties = ties)
-  } else {
-    # Validar que sean enteros positivos
-    if (any(x != floor(x)) || any(y != floor(y)) || any(x <= 0) || any(y <= 0)) {
-      stop("Los valores deben ser enteros positivos si no se usan rankings.")
-    }
   }
-
-  # Cálculo de diferencias
+  
+  # Diferencias
   d <- x - y
   positivos <- sum(d > 0)
   negativos <- sum(d < 0)
   empates <- sum(d == 0)
   n <- positivos + negativos
   menor <- min(positivos, negativos)
-
-  # Prueba binomial exacta
+  
+  # Valor p
   p_value <- switch(alternativa,
                     "bilateral" = 2 * binom.test(menor, n, p = 0.5)$p.value,
                     "mayor" = binom.test(positivos, n, p = 0.5, alternative = "greater")$p.value,
                     "menor" = binom.test(positivos, n, p = 0.5, alternative = "less")$p.value,
-                    stop("Alternativa no válida. Use 'mayor', 'menor' o 'bilateral'."))
-
-  # Gráfico opcional
+                    stop("Alternativa no válida."))
+  
+  p_value <- min(p_value, 1)
+  
+  # 📊 decisiones para múltiples alphas
+  decisiones <- data.frame(
+    alpha = alphas,
+    decision = ifelse(p_value < alphas, "Rechazar H0", "No Rechazar H0")
+  )
+  
+  # Gráfico
   if (graficar) {
     alturas <- c(positivos, negativos, empates)
     nombres <- c("+", "-", "0")
     colores <- c("steelblue", "tomato", "gray70")
+    
     barplot(alturas, names.arg = nombres, col = colores,
             ylab = "Frecuencia", xlab = "Signo de la diferencia",
             main = "Conteo de signos (prueba de signos)")
-    abline(h = 0)
   }
-
-  # Salida
+  
+  # Resultado completo
   list(
     n_pares_validos = n,
     signos_positivos = positivos,
     signos_negativos = negativos,
     empates = empates,
     estadistico = menor,
-    p_value = min(p_value, 1),
-    alpha = alpha,
-    decision = ifelse(p_value < alpha, "Rechazar H0", "No Rechazar H0"),
-    interpretacion = "H0: No hay diferencia sistemática entre las posiciones (p = 0.5)",
-    datos_ordenados = if (usar_rankings) list(x_rank = x, y_rank = y) else NULL
+    p_value = p_value,
+    decisiones = decisiones,
+    interpretacion = "H0: No hay diferencia sistemática entre las posiciones (p = 0.5)"
   )
 }
-
-
-# -------------------------------------------------------------------
-# Función auxiliar para codificar factores ordenados como enteros
-# -------------------------------------------------------------------
-# x: vector tipo factor (idealmente ordenado)
-# Devuelve: vector numérico correspondiente a las posiciones
-# -------------------------------------------------------------------
-
-codificar_orden <- function(x) {
-  if (!is.factor(x)) {
-    stop("El vector no es un factor. Por favor conviértalo a factor ordenado.")
-  }
-
-  if (!is.ordered(x)) {
-    warning("El factor no es ordenado. Se convertirá con el orden actual de niveles.")
-    x <- factor(x, levels = unique(x), ordered = TRUE)
-  }
-
-  as.numeric(x)
-}
-
-# ------------------------------------------------------------------
-# Función para generar rankings ordinales desde una variable continua
-# ------------------------------------------------------------------
-# x: vector numérico
-# descendente: si TRUE, el valor más alto recibe rango 1
-# ties: método para empates ("average", "first", "min", "max", "random")
-# ------------------------------------------------------------------
-
-ranking_ordinal <- function(x, descendente = FALSE, ties = "average") {
-  if (!is.numeric(x)) stop("La variable debe ser numérica.")
-  
-  x_rank <- if (descendente) {
-    rank(-x, ties.method = ties)
-  } else {
-    rank(x, ties.method = ties)
-  }
-  
-  return(x_rank)
-}
-
-
-
