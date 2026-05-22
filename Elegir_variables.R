@@ -202,3 +202,30 @@ base_final %>%
   ggplot(aes(y = capital_humano, x = bienestar_economico)) +
   geom_point()
 
+base_final <- base_final %>% 
+  filter(
+    capital_humano != 0,
+    bienestar_economico != 0,
+    intensidad_laboral != 0,
+  )
+base_final <- base_final %>% 
+  mutate(
+    educacion_cat = case_when(
+      P3042 <= 5 ~ 'Educación básica',
+      P3042 <= 8 ~ 'Educación media',
+      P3042 >= 9 ~ 'Educación superior',
+      TRUE ~ NA_character_
+    )
+  )
+
+base_final %>%
+  ggplot(aes(y = capital_humano, x = educacion_cat)) +
+  geom_boxplot()
+
+base_final %>%
+  ggplot(aes(y = bienestar_economico, x = educacion_cat)) +
+  geom_boxplot()
+
+base_final %>%
+  ggplot(aes(y = intensidad_laboral, x = educacion_cat)) +
+  geom_boxplot()
