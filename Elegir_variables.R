@@ -3,7 +3,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-
+library(lmtest)
 # ── IMPORTAR ──────────────────────────────────────────────────────────────────
 fuerzat_mayo  <- read_delim("/home/arley/Estadistica_2/Datos/Mayo_2025/CSV/Fuerza de trabajo.CSV",
                             delim = ";", escape_double = FALSE, trim_ws = TRUE)
@@ -175,6 +175,9 @@ cor.test(
   base_cor$bienestar_economico
 )
 
+#-------------------------------------
+# ANALISIS GRAFICO
+#-------------------------------------
 
 
 base_final %>%
@@ -229,3 +232,50 @@ base_final %>%
 base_final %>%
   ggplot(aes(y = intensidad_laboral, x = educacion_cat)) +
   geom_boxplot()
+
+
+base_final <- base_final %>%
+  mutate(
+    capital_humano = capital_humano*100,
+    intensidad_laboral = intensidad_laboral*100,
+    bienestar_economico = bienestar_economico*100
+    
+  )
+base_final %>% 
+  select(capital_humano, intensidad_laboral, bienestar_economico) %>% 
+  cor()
+cor.test(base_final$intensidad_laboral, base_final$bienestar_economico)
+cor.test(base_final$intensidad_laboral, base_final$capital_humano)
+cor.test(base_final$capital_humano, base_final$bienestar_economico)
+
+lm(intensidad_laboral ~ bienestar_economico + educacion_cat, data = base_final) %>%
+  summary()
+#Usar la varieble Bienestar_economico como dependiente para predecir 
+lm(bienestar_economico ~ educacion_cat + intensidad_laboral, data = base_final) %>%
+  summary()
+
+m1 <- lm(bienestar_economico ~ educacion_cat + intensidad_laboral, data = base_final)
+summary(aov(m1))
+step(m1)
+#-----------------------------
+# TEST
+#-----------------------------
+#----------------------
+# Homocedasticidad
+#----------------------
+bptest(m1)
+
+#----------------------
+# Normalidad
+#----------------------
+ks.test(rstandard(m1),pnorm)
+shapiro.test(residuals(m1))
+
+#----------------------
+# Incorrelacion
+#----------------------
+dwtest(m1)
+
+#----------------------
+# Box-Cox
+#----------------------
