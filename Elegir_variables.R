@@ -3,6 +3,8 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+install.packages("zoo", repos="https://cloud.r-project.org")
+install.packages("lmtest", repos="https://cloud.r-project.org")
 library(lmtest)
 # ── IMPORTAR ──────────────────────────────────────────────────────────────────
 fuerzat_mayo  <- read_delim("/home/arley/Estadistica_2/Datos/Mayo_2025/CSV/Fuerza de trabajo.CSV",
@@ -279,3 +281,84 @@ dwtest(m1)
 #----------------------
 # Box-Cox
 #----------------------
+
+#Transformar la variable ya que Y es negativo 
+base_final <- base_final %>%
+  mutate(
+    bienestar_pos =
+      bienestar_economico -
+      min(bienestar_economico, na.rm = TRUE) + 1
+  )
+min(model.response(model.frame(m1)))
+m2 <- lm(
+  bienestar_pos ~ educacion_cat + intensidad_laboral,
+  data = base_final
+)
+library(MASS)
+
+boxcox(m2, plotit = TRUE)
+
+bc <- boxcox(m2, plotit = FALSE)
+
+lambda <- bc$x[which.max(bc$y)]
+
+lambda
+z <- (
+  base_final$bienestar_pos^lambda - 1
+) / (
+  lambda *
+    mean(base_final$bienestar_pos)^(lambda - 1)
+)
+#Nuevo ajuste con la variable Z
+fit.bc <- lm(
+  z ~ educacion_cat + intensidad_laboral,
+  data = base_final
+)
+shapiro.test(residuals(fit.bc))
+summary(fit.bc)
+#------------------------------------
+# PONDERACIÓN
+# -----------------------------------
+var_edu <- base_final %>%
+  group_by(educacion_cat) %>%
+  summarise(
+    wtd = 1 / var(bienestar_pos),
+    .groups = "drop"
+  )
+
+base_final <- base_final %>%
+  left_join(var_edu, by = "educacion_cat")
+
+m3 <- lm(
+  bienestar_pos ~ educacion_cat + intensidad_laboral,
+  data = base_final,
+  weights = wtd
+)
+
+summary(m3)
+shapiro.test(residuals(m3))
+
+# Eliminación de outliers 
+summary(base_final$bienestar_economico)
+
+Q1 <- quantile(base_final$bienestar_economico, 0.25)
+Q3 <- quantile(base_final$bienestar_economico, 0.75)
+
+IQR_val <- Q3 - Q1
+
+base_sin_out <- base_final %>%
+  filter(
+    bienestar_economico >
+      (Q1 - 1.5 * IQR_val),
+    
+    bienestar_economico <
+      (Q3 + 1.5 * IQR_val)
+  )
+m4 <- lm(
+  bienestar_economico ~ educacion_cat + intensidad_laboral,
+  data = base_sin_out
+)
+
+summary(m4)
+
+shapiro.test(residuals(m4))
