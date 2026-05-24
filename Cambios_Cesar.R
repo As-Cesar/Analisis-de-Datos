@@ -46,7 +46,8 @@ base_data <- ocupados_mayo %>%
       ),
     ocupados_mayo %>% 
       select(
-        P6440      #Tiene contrato si o no
+        P6440,      #Tiene contrato si o no
+        P6800       #Horas trabajadas
       ),
     by = c("DIRECTORIO", "ORDEN")
   )
@@ -121,7 +122,7 @@ base_data %>%
     experiencia2
   ) %>%
   ggpairs()
-
+#FORMAL
 base_formal <- base_data %>%
   filter(P6440 == 1)
 m_formal <- lm(
@@ -134,3 +135,70 @@ m_formal <- lm(
 )
 
 summary(m_formal)
+
+m_horas <- lm(
+  ingreso_log ~
+    educacion_anios +
+    experiencia +
+    experiencia2 +
+    factor(P3271) +
+    P6800,
+  data = base_formal
+)
+
+summary(m_horas)
+
+base_formal %>%
+  select(
+    P6800,
+    P3271,
+    educacion_anios,
+    ingreso_log,
+    experiencia,
+    experiencia2
+  ) %>%
+  ggpairs()
+
+# INFORMAL
+base_informal <- base_data %>% 
+  filter(P6440 == 2)
+m_informal <- lm(
+  ingreso_log ~
+    educacion_anios +
+    experiencia +
+    experiencia2 +
+    factor(P3271),
+  data = base_informal
+)
+summary(m_informal)
+
+m_horas <- lm(
+  ingreso_log ~
+    educacion_anios +
+    experiencia +
+    experiencia2 +
+    factor(P3271) +
+    P6800,
+  data = base_informal
+)
+
+summary(m_horas)
+
+#INFORMAL Y FORMAL
+base_data <- base_data %>%
+  mutate(
+    informalidad = ifelse(P6440 == 1, 0, 1)
+  )
+
+m_final <- lm(
+  ingreso_log ~
+    educacion_anios +
+    experiencia +
+    experiencia2 +
+    factor(P3271) +
+    P6800 +
+    informalidad,
+  data = base_data
+)
+
+summary(m_final)
