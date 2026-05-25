@@ -32,26 +32,38 @@ caract_gral_junio <- read_delim("/home/arley/Estadistica_2/Datos/Junio_2025/CSV/
                                 delim = ";", escape_double = FALSE, trim_ws = TRUE)
 caract_gral_julio <- read_delim("/home/arley/Estadistica_2/Datos/Julio_2025/CSV/Características generales, seguridad social en salud y educación.CSV",
                                 delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+Datos_hogar_mayo <- read_delim("/home/arley/Estadistica_2/Datos/Mayo_2025/CSV/Datos del hogar y la vivienda.CSV",
+                               delim = ";", escape_double = FALSE, trim_ws = TRUE)
 # =========================================================
 
 base_data <- ocupados_mayo %>%
+  
   left_join(
     caract_gral_mayo %>%
       select(
         DIRECTORIO,
         ORDEN,
-        P6040,   # Edad
-        P3042,    # Nivel educativo
-        P3271,     #Sexo al nacer
-      ),
-    ocupados_mayo %>% 
-      select(
-        P6440,      #Tiene contrato si o no
-        P6800       #Horas trabajadas
+        P6040,
+        P3042,
+        P3271
       ),
     by = c("DIRECTORIO", "ORDEN")
+  ) %>%
+  
+  left_join(
+    Datos_hogar_mayo %>%
+      select(
+        DIRECTORIO,
+        P4030S1A1
+      ),
+    by = "DIRECTORIO"
   )
 
+base_data <- base_data %>%
+  filter(
+    P4030S1A1 %in% 1:6
+  )
 
 base_data <- base_data %>%
   mutate(
@@ -123,14 +135,18 @@ base_data %>%
   ) %>%
   ggpairs()
 #FORMAL
+
+
+
 base_formal <- base_data %>%
   filter(P6440 == 1)
 m_formal <- lm(
   ingreso_log ~
-    educacion_anios +
-    experiencia +
-    experiencia2 +
-    factor(P3271),
+  educacion_anios +
+  experiencia +
+  experiencia2 +
+  factor(P3271),
+  factor(P4030S1A1),  
   data = base_formal
 )
 
@@ -164,10 +180,11 @@ base_informal <- base_data %>%
   filter(P6440 == 2)
 m_informal <- lm(
   ingreso_log ~
-    educacion_anios +
-    experiencia +
-    experiencia2 +
-    factor(P3271),
+  educacion_anios +
+  experiencia +
+  experiencia2 +
+  factor(P3271),
+  factor(P4030S1A1),
   data = base_informal
 )
 summary(m_informal)
@@ -192,13 +209,28 @@ base_data <- base_data %>%
 
 m_final <- lm(
   ingreso_log ~
+    
     educacion_anios +
     experiencia +
     experiencia2 +
     factor(P3271) +
     P6800 +
     informalidad,
-  data = base_data
+    factor(P4030S1A1),  
+    data = base_data
 )
 
 summary(m_final)
+
+base_data %>%
+  select(
+    P6800,
+    P3271,
+    educacion_anios,
+    ingreso_log,
+    experiencia,
+    experiencia2,
+    informalidad,
+    P4030S1A1
+  ) %>%
+  ggpairs()
