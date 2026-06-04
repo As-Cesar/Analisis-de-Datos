@@ -18,3 +18,20 @@ La encuesta utiliza un diseño de muestreo estadístico que permite realizar inf
 **Fuente oficial del dataset:**
 
 :contentReference[oaicite:1]{index=1}
+
+
+# Habilidades Demostradas
+
+Durante el desarrollo de este proyecto se aplicaron conocimientos en:
+
+- Análisis Exploratorio de Datos (EDA)
+- Inferencia Estadística
+- Estimación de Parámetros
+- Intervalos de Confianza
+- Pruebas de Hipótesis
+- Correlación Estadística
+- Regresión Lineal Múltiple
+- Validación de Supuestos
+- Interpretación de Resultados
+- Programación en R
+- Comunicación de Resultados Analíticos
