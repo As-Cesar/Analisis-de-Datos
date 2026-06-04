@@ -4,8 +4,6 @@ Este proyecto reúne la aplicación práctica de técnicas de análisis estadís
 
 A lo largo del proyecto se desarrollan diferentes metodologías de inferencia estadística, pruebas de hipótesis y modelos de correlación y regresión, implementadas completamente en R. El objetivo principal es extraer conocimiento a partir de los datos, validar hipótesis estadísticas y modelar relaciones entre variables socioeconómicas.
 
----
-
 ## Herramientas Utilizadas
 
 - R
@@ -15,8 +13,6 @@ A lo largo del proyecto se desarrollan diferentes metodologías de inferencia es
 - Regresión Lineal Múltiple
 - ANOVA
 - Análisis Exploratorio de Datos (EDA)
-
----
 
 ## Habilidades Demostradas
 
