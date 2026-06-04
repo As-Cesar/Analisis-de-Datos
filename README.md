@@ -1,4 +1,6 @@
-# Proyecto de Análisis de Datos con Inferencia Estadística, Pruebas de Hipótesis y Regresión
+<p align="center">
+  <img src="assets/banner.png" alt="Analisis de Datos - DANE" width="100%"/>
+</p>
 
 Este proyecto reúne la aplicación práctica de técnicas de análisis estadístico utilizando datos reales de la Gran Encuesta Integrada de Hogares (GEIH 2025).
 
