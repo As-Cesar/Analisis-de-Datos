@@ -53,4 +53,4 @@ La encuesta utiliza un diseño de muestreo estadístico que permite realizar inf
 
 **Fuente oficial del dataset:**
 
-:contentReference[oaicite:1]{index=1}
+[:contentReference[oaicite:1]{index=1}](https://microdatos.dane.gov.co/index.php/catalog/853/data-dictionary)
